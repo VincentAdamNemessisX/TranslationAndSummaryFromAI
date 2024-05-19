@@ -3,12 +3,14 @@
 import json
 
 import requests
-from flask import Flask, request, url_for, jsonify
+from flask import Flask, request, url_for, jsonify, Response
 
 app = Flask(__name__)
 
-translation_result = None
-translate_state = False
+headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer app-sH92UTScnJGS5rR4hViuGmkA'
+}
 
 
 @app.route('/api/v1/get/function/list', methods=['GET'])
@@ -74,32 +76,49 @@ def get_function_list():
     })
 
 
-@app.route('/api/v1/get/translation/from/zh-hans', methods=['POST'])
-def get_translation_result_from_zh_hans():
+@app.route('/api/v1/get/translation/from/zh-hans/<int:trunk>/', methods=['POST'])
+def get_translation_result_from_zh_hans(trunk=0):
     """
     获取中译英翻译结果
     :return: 中译英翻译结果
     """
     if request.method == 'POST':
-        global translate_state
-        global translation_result
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer app-sH92UTScnJGS5rR4hViuGmkA'
-        }
-        data = {
-            "inputs": {
-                "user_text": request.form.get('text'),
-            },
-            "user": "用户"
-        }
+        global headers
+        try:
+            if trunk:
+                data = {
+                    "inputs": {
+                        "user_text": request.form.get('text'),
+                    },
+                    "user": request.form.get('user'),
+                    "response_mode": "streaming"
+                }
+            else:
+                data = {
+                    "inputs": {
+                        "user_text": request.form.get('text'),
+                    },
+                    "user": request.form.get('user')
+                }
+        except Exception as e:
+            return jsonify({
+                'code': 400,
+                'message': 'error',
+                'data': 'params error' + str(e)
+            })
         response = requests.post('https://api.dify.ai/v1/workflows/run',
-                                 headers=headers, data=json.dumps(data))
-        translation_result = response.json()
+                                 headers=headers, data=json.dumps(data), stream=bool(trunk))
+
+        def generate():
+            for chunk in response.iter_content(chunk_size=1024):
+                yield chunk
+
+        if trunk:
+            return Response(generate(), mimetype='text/event-stream')
         return jsonify({
             'code': 200,
             'message': 'success',
-            'data': translation_result
+            'data': response.json()
         })
     return jsonify({
         'code': 400,
@@ -108,9 +127,52 @@ def get_translation_result_from_zh_hans():
     })
 
 
-@app.route('/api/v1/get/translation/from/eng', methods=['POST'])
-def get_translation_result_from_eng():
-    return 'get_translation_result'
+@app.route('/api/v1/get/translation/from/eng/<int:trunk>/', methods=['GET', 'POST'])
+async def get_translation_result_from_eng(trunk=0):
+    if request.method == 'POST':
+        global headers
+        try:
+            if trunk:
+                data = {
+                    "inputs": {
+                        "user_text": request.form.get('text'),
+                    },
+                    "user": request.form.get('user'),
+                    "response_mode": "streaming"
+                }
+            else:
+                data = {
+                    "inputs": {
+                        "user_text": request.form.get('text'),
+                    },
+                    "user": request.form.get('user')
+                }
+        except Exception as e:
+            return jsonify({
+                'code': 400,
+                'message': 'error',
+                'data': 'params error' + str(e)
+            })
+        response = requests.post('https://api.dify.ai/v1/workflows/run',
+                                 headers=headers, data=json.dumps(data), stream=bool(trunk))
+
+        def generate():
+            for chunk in response.iter_content(chunk_size=1024):
+                print(chunk)
+                yield chunk
+
+        if trunk:
+            return Response(generate(), mimetype='text/event-stream')
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': response.json()
+        })
+    return jsonify({
+        'code': 400,
+        'message': 'error',
+        'data': 'method not allowed'
+    })
 
 
 @app.route('/api/v1/get/translate/progress', methods=['POST'])
