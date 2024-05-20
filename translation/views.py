@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 headers = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer app-sH92UTScnJGS5rR4hViuGmkA'
+    'Authorization': 'Bearer app-w08rkpkjeBUD3lejOhDQlRnS'
 }
 
 
@@ -106,7 +106,7 @@ def get_translation_result_from_zh_hans(trunk=0):
                 'message': 'error',
                 'data': 'params error' + str(e)
             })
-        response = requests.post('https://api.dify.ai/v1/workflows/run',
+        response = requests.post('http://localhost:5001/v1/completion-messages',
                                  headers=headers, data=json.dumps(data), stream=bool(trunk))
 
         def generate():
@@ -127,7 +127,7 @@ def get_translation_result_from_zh_hans(trunk=0):
     })
 
 
-@app.route('/api/v1/get/translation/from/eng/<int:trunk>/', methods=['GET', 'POST'])
+@app.route('/api/v1/get/translation/from/eng/[int:trunk]>/', methods=['POST'])
 async def get_translation_result_from_eng(trunk=0):
     if request.method == 'POST':
         global headers
@@ -153,7 +153,7 @@ async def get_translation_result_from_eng(trunk=0):
                 'message': 'error',
                 'data': 'params error' + str(e)
             })
-        response = requests.post('https://api.dify.ai/v1/workflows/run',
+        response = requests.post('http://localhost:5001/v1/completion-messages',
                                  headers=headers, data=json.dumps(data), stream=bool(trunk))
 
         def generate():
