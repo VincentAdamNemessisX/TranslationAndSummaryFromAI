@@ -1,4 +1,4 @@
-from translation.views import app
+from function import app
 
 app = app
 

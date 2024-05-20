@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 headers = {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer app-w08rkpkjeBUD3lejOhDQlRnS'
+    'Authorization': 'Bearer app-sqOp6VXprejI5U1KH1kyskuX'
 }
 
 
@@ -88,6 +88,7 @@ def get_translation_result_from_zh_hans(trunk=0):
             if trunk:
                 data = {
                     "inputs": {
+                        "type": "翻译",
                         "user_text": request.form.get('text'),
                     },
                     "user": request.form.get('user'),
@@ -96,7 +97,8 @@ def get_translation_result_from_zh_hans(trunk=0):
             else:
                 data = {
                     "inputs": {
-                        "user_text": request.form.get('text'),
+                        "type": "翻译",
+                        "user_text": request.form.get('text')
                     },
                     "user": request.form.get('user')
                 }
@@ -106,7 +108,7 @@ def get_translation_result_from_zh_hans(trunk=0):
                 'message': 'error',
                 'data': 'params error' + str(e)
             })
-        response = requests.post('http://localhost:5001/v1/completion-messages',
+        response = requests.post('http://localhost:5001/v1/workflows/run',
                                  headers=headers, data=json.dumps(data), stream=bool(trunk))
 
         def generate():
@@ -128,13 +130,14 @@ def get_translation_result_from_zh_hans(trunk=0):
 
 
 @app.route('/api/v1/get/translation/from/eng/[int:trunk]>/', methods=['POST'])
-async def get_translation_result_from_eng(trunk=0):
+def get_translation_result_from_eng(trunk=0):
     if request.method == 'POST':
         global headers
         try:
             if trunk:
                 data = {
                     "inputs": {
+                        "type": "翻译",
                         "user_text": request.form.get('text'),
                     },
                     "user": request.form.get('user'),
@@ -143,7 +146,8 @@ async def get_translation_result_from_eng(trunk=0):
             else:
                 data = {
                     "inputs": {
-                        "user_text": request.form.get('text'),
+                        "type": "翻译",
+                        "user_text": request.form.get('text')
                     },
                     "user": request.form.get('user')
                 }
@@ -153,7 +157,56 @@ async def get_translation_result_from_eng(trunk=0):
                 'message': 'error',
                 'data': 'params error' + str(e)
             })
-        response = requests.post('http://localhost:5001/v1/completion-messages',
+        response = requests.post('http://localhost:5001/v1/workflows/run',
+                                 headers=headers, data=json.dumps(data), stream=bool(trunk))
+
+        def generate():
+            for chunk in response.iter_content(chunk_size=1024):
+                yield chunk
+
+        if trunk:
+            return Response(generate(), mimetype='text/event-stream')
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': response.json()
+        })
+    return jsonify({
+        'code': 400,
+        'message': 'error',
+        'data': 'method not allowed'
+    })
+
+
+@app.route('/api/v1/get/summary/from/paragraph/<int:trunk>', methods=['POST'])
+def summary(trunk):
+    if request.method == 'POST':
+        global headers
+        try:
+            if trunk:
+                data = {
+                    "inputs": {
+                        "type": "总结",
+                        "user_text": request.form.get('text')
+                    },
+                    "user": request.form.get('user'),
+                    "response_mode": "streaming"
+                }
+            else:
+                data = {
+                    "inputs": {
+                        "type": "总结",
+                        "user_text": request.form.get('text')
+                    },
+                    "user": request.form.get('user')
+                }
+        except Exception as e:
+            return jsonify({
+                'code': 400,
+                'message': 'error',
+                'data': 'params error' + str(e)
+            })
+        response = requests.post('http://localhost:5001/v1/workflows/run',
                                  headers=headers, data=json.dumps(data), stream=bool(trunk))
 
         def generate():
@@ -175,6 +228,6 @@ async def get_translation_result_from_eng(trunk=0):
     })
 
 
-@app.route('/api/v1/get/translate/progress', methods=['POST'])
+@app.route('/api/v1/get/generate/progress', methods=['POST'])
 def get_translate_progress():
     return 'get_translate_progress'
