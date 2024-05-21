@@ -9,9 +9,10 @@ headers = {
     'Authorization': 'Bearer '
 }
 data = {
-    "user": "宇将军",
+    "user": "用户",
     "response_mode": "streaming",
     "inputs": {
+        "type": "翻译",
         "user_text": "早早早早早早早早早早早早东风街"
                      "道事件流看电视剧了法兰卡丹仨绝地反"
                      "击第十六课防控力度数据库的法兰卡丹"
@@ -21,6 +22,6 @@ data = {
                      "俊凯的说了啥都说了刚打上来管理局肯"
     }
 }
-response = requests.post('http://localhost:5001/completion-messages',
+response = requests.post('http://localhost:5001/workflows/run',
                          headers=headers, data=json.dumps(data))
 print(response.text)

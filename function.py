@@ -13,70 +13,112 @@ headers = {
 }
 
 
-@app.route('/api/v1/get/function/list', methods=['GET'])
+@app.route('/api/v1/get/function/list', methods=['GET', 'POST'])
 def get_function_list():
     """
     获取功能列表
     :return: 功能列表
     """
-    if request.method == 'GET':
-        function_list = [
-            {
-                'name': '中译英',
-                'url': url_for('get_translation_result_from_zh_hans'),
-                'method': 'POST',
-                'params': [
-                    {
-                        'name': 'text',
-                        'type': 'string',
-                        'required': True,
-                        'description': '需要翻译的文本'
-                    }
-                ],
-                'description': '将中文翻译为英文'
-            },
-            {
-                'name': '英译中',
-                'url': url_for('get_translation_result_from_eng'),
-                'method': 'POST',
-                'params': [
-                    {
-                        'name': 'text',
-                        'type': 'string',
-                        'required': True,
-                        'description': '需要翻译的文本'
-                    }
-                ],
-                'description': '翻译英文到中文'
-            },
-            {
-                'name': '获取翻译进度',
-                'url': url_for('get_translate_progress'),
-                'method': 'POST',
-                'params': [
-                    {
-                        'name': 'text',
-                        'type': 'string',
-                        'required': True,
-                        'description': '需要翻译的文本'
-                    }
-                ],
-                'description': '翻译英文到中文'
-            }
-        ]
-        return jsonify({
-            'code': 200,
-            'message': 'success',
-            'data': function_list
-        })
+    function_list = [
+        {
+            'name': '中译英（一次性返回）',
+            'url': url_for('get_translation_result_from_zh_hans', trunk=0),
+            'method': 'POST',
+            'params': [
+                {
+                    'name': 'user_text',
+                    'type': 'string',
+                    'required': True,
+                    'max_length': 10000,
+                    'description': '需要翻译的文本'
+                }
+            ],
+            'description': '将中文翻译为英文'
+        },
+        {
+            'name': '中译英（流式传输，分段返回）',
+            'url': url_for('get_translation_result_from_zh_hans', trunk=1),
+            'method': 'POST',
+            'params': [
+                {
+                    'name': 'user_text',
+                    'type': 'string',
+                    'required': True,
+                    'max_length': 10000,
+                    'description': '需要翻译的文本'
+                }
+            ],
+            'description': '将中文翻译为中文'
+        },
+        {
+            'name': '英译中（一次性返回）',
+            'url': url_for('get_translation_result_from_eng', trunk=0),
+            'method': 'POST',
+            'params': [
+                {
+                    'name': 'user_text',
+                    'type': 'string',
+                    'required': True,
+                    'max_length': 10000,
+                    'description': '需要翻译的文本'
+                }
+            ],
+            'description': '将英文翻译为中文'
+        },
+        {
+            'name': '英译中（流式传输，分段返回）',
+            'url': url_for('get_translation_result_from_eng', trunk=1),
+            'method': 'POST',
+            'params': [
+                {
+                    'name': 'user_text',
+                    'type': 'string',
+                    'required': True,
+                    'max_length': 10000,
+                    'description': '需要翻译的文本'
+                }
+            ],
+            'description': '将英文翻译为中文'
+        },
+        {
+            'name': '获取总结内容（一次性返回）',
+            'url': url_for('get_summary', trunk=0),
+            'method': 'POST',
+            'params': [
+                {
+                    'name': 'user_text',
+                    'type': 'string',
+                    'required': True,
+                    'max_length': 10000,
+                    'description': '需要总结的内容'
+                }
+            ],
+            'description': '总结输入的文本内容'
+        },
+        {
+            'name': '获取总结内容（流式传输，分段返回）',
+            'url': url_for('get_summary', trunk=1),
+            'method': 'POST',
+            'params': [
+                {
+                    'name': 'user_text',
+                    'type': 'string',
+                    'required': True,
+                    'max_length': 10000,
+                    'description': '需要总结的内容'
+                }
+            ],
+            'description': '总结输入的文本内容'
+        }
+    ]
     return jsonify({
-        'code': 400,
-        'message': 'error',
-        'data': 'method not allowed'
+        'code': 200,
+        'message': 'success',
+        'data': function_list
     })
 
 
-@app.route('/api/v1/get/translation/from/zh-hans/<int:trunk>/', methods=['POST'])
+@app.route('/api/v1/get/translation/from/zh-hans/<int:trunk>', methods=['POST'])
 def get_translation_result_from_zh_hans(trunk=0):
     """
     获取中译英翻译结果
@@ -91,7 +133,7 @@ def get_translation_result_from_zh_hans(trunk=0):
                         "type": "翻译",
                         "user_text": request.form.get('text'),
                     },
-                    "user": request.form.get('user'),
+                    "user": "用户",
                     "response_mode": "streaming"
                 }
             else:
@@ -100,7 +142,7 @@ def get_translation_result_from_zh_hans(trunk=0):
                         "type": "翻译",
                         "user_text": request.form.get('text')
                     },
-                    "user": request.form.get('user')
+                    "user": "用户"
                 }
         except Exception as e:
             return jsonify({
@@ -129,7 +171,7 @@ def get_translation_result_from_zh_hans(trunk=0):
     })
 
 
-@app.route('/api/v1/get/translation/from/eng/[int:trunk]>/', methods=['POST'])
+@app.route('/api/v1/get/translation/from/eng/<int:trunk>', methods=['POST'])
 def get_translation_result_from_eng(trunk=0):
     if request.method == 'POST':
         global headers
@@ -140,7 +182,7 @@ def get_translation_result_from_eng(trunk=0):
                         "type": "翻译",
                         "user_text": request.form.get('text'),
                     },
-                    "user": request.form.get('user'),
+                    "user": "用户",
                     "response_mode": "streaming"
                 }
             else:
@@ -149,7 +191,7 @@ def get_translation_result_from_eng(trunk=0):
                         "type": "翻译",
                         "user_text": request.form.get('text')
                     },
-                    "user": request.form.get('user')
+                    "user": "用户"
                 }
         except Exception as e:
             return jsonify({
@@ -179,7 +221,7 @@ def get_translation_result_from_eng(trunk=0):
 
 
 @app.route('/api/v1/get/summary/from/paragraph/<int:trunk>', methods=['POST'])
-def summary(trunk):
+def get_summary(trunk):
     if request.method == 'POST':
         global headers
         try:
@@ -189,7 +231,7 @@ def summary(trunk):
                         "type": "总结",
                         "user_text": request.form.get('text')
                     },
-                    "user": request.form.get('user'),
+                    "user": "用户",
                     "response_mode": "streaming"
                 }
             else:
@@ -198,7 +240,7 @@ def summary(trunk):
                         "type": "总结",
                         "user_text": request.form.get('text')
                     },
-                    "user": request.form.get('user')
+                    "user": "用户"
                 }
         except Exception as e:
             return jsonify({
@@ -226,8 +268,3 @@ def summary(trunk):
         'message': 'error',
         'data': 'method not allowed'
     })
-
-
-@app.route('/api/v1/get/generate/progress', methods=['POST'])
-def get_translate_progress():
-    return 'get_translate_progress'
